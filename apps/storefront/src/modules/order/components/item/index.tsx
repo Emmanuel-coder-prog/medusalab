@@ -12,6 +12,8 @@ type ItemProps = {
 }
 
 const Item = ({ item, currencyCode }: ItemProps) => {
+const isGift = item.metadata?.is_gift === "true"
+const giftMessage = item.metadata?.gift_message as string
   return (
     <Table.Row className="w-full" data-testid="product-row">
       <Table.Cell className="!pl-0 p-4 w-24">
@@ -29,6 +31,11 @@ const Item = ({ item, currencyCode }: ItemProps) => {
         </Text>
         <LineItemOptions variant={item.variant} data-testid="product-variant" />
       </Table.Cell>
+      {isGift && <Text
+  className="inline-block txt-medium text-ui-fg-subtle w-full overflow-hidden text-ellipsis"
+>
+  Gift Message: {giftMessage || "No gift message provided"}
+</Text>}
 
       <Table.Cell className="!pr-0">
         <span className="!pr-0 flex flex-col items-end h-full justify-center">
