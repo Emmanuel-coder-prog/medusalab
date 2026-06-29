@@ -2,6 +2,7 @@ import type {
   MedusaRequest,
   MedusaResponse,
 } from "@medusajs/framework/http"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { createBrandWorkflow } from "../../../workflows/create-brand"
 import {
   AdminCreateBrandSchema,
@@ -9,19 +10,29 @@ import {
 } from "./validators"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
-  const brandModuleService = req.scope.resolve("brand")
+  const validatedQuery = AdminListBrandSchema.parse(req.query)
+  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
 
-  const offset = parseInt(req.query.offset as string) || 0
-  const limit = parseInt(req.query.limit as string) || 20
+  const offset = validatedQuery.offset ?? 0
+  const limit = validatedQuery.limit ?? 20
 
-  const [brands, count] = await brandModuleService.listAndCountBrands(
-    {},
-    { skip: offset, take: limit }
-  )
+  const { data: brands, metadata } = await query.graph({
+    entity: "brand",
+    fields: [
+      "id",
+      "name",
+      "description",
+      "handle",
+      "metadata",
+      "created_at",
+      "updated_at",
+    ],
+    pagination: { skip: offset, take: limit },
+  })
 
   res.json({
     brands,
-    count,
+    count: metadata?.count ?? brands.length,
     offset,
     limit,
   })

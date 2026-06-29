@@ -1,11 +1,15 @@
-import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMemo, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Container,
   Heading,
   Badge,
   Text,
   Button,
+  Input,
+  Label,
+  Textarea,
+  Drawer,
 } from "@medusajs/ui"
 import { defineRouteConfig } from "@medusajs/admin-sdk"
 
@@ -14,14 +18,35 @@ type Brand = {
   name: string
   handle: string
   description: string | null
-  created_at: string
-  updated_at: string
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+const formatDate = (value?: string | null) => {
+  if (!value) {
+    return "—"
+  }
+
+  const parsedDate = new Date(value)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "—"
+  }
+
+  return parsedDate.toLocaleDateString()
 }
 
 const BrandsPage = () => {
+  const queryClient = useQueryClient()
   const [pagination, setPagination] = useState({
     offset: 0,
     limit: 20,
+  })
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [form, setForm] = useState({
+    name: "",
+    handle: "",
+    description: "",
   })
 
   // Fetch brands with pagination
@@ -48,6 +73,34 @@ const BrandsPage = () => {
     },
   })
 
+  const createBrandMutation = useMutation({
+    mutationFn: async (payload: { name: string; handle: string; description?: string }) => {
+      const response = await fetch("/admin/brands", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to create brand")
+      }
+
+      return response.json()
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["brands"] })
+      setIsCreateOpen(false)
+      setForm({ name: "", handle: "", description: "" })
+    },
+  })
+
+  const isFormValid = useMemo(() => {
+    return form.name.trim() && form.handle.trim()
+  }, [form.name, form.handle])
+
   // Handle pagination change
   const handlePaginationChange = (newOffset: number, newLimit: number) => {
     setPagination({
@@ -56,7 +109,19 @@ const BrandsPage = () => {
     })
   }
 
+  const handleCreateSubmit = (event: React.FormEvent) => {
+    event.preventDefault()
 
+    if (!isFormValid) {
+      return
+    }
+
+    createBrandMutation.mutate({
+      name: form.name.trim(),
+      handle: form.handle.trim(),
+      description: form.description.trim() || undefined,
+    })
+  }
 
   if (isLoading) {
     return (
@@ -80,9 +145,12 @@ const BrandsPage = () => {
     <Container className="px-8 py-10">
       <div className="flex items-center justify-between mb-6">
         <Heading>Brands</Heading>
-        <Text className="text-sm text-gray-600">
-          Total: {data?.count || 0} brands
-        </Text>
+        <div className="flex items-center gap-3">
+          <Text className="text-sm text-gray-600">
+            Total: {data?.count || 0} brands
+          </Text>
+          <Button onClick={() => setIsCreateOpen(true)}>Create Brand</Button>
+        </div>
       </div>
 
       {data?.brands && data.brands.length > 0 ? (
@@ -108,7 +176,7 @@ const BrandsPage = () => {
                       {brand.description || "—"}
                     </td>
                     <td className="px-6 py-3 text-sm text-gray-600">
-                      {new Date(brand.created_at).toLocaleDateString()}
+                      {formatDate(brand.created_at)}
                     </td>
                   </tr>
                 ))}
@@ -164,6 +232,68 @@ const BrandsPage = () => {
           <Text className="text-center text-gray-600">No brands found</Text>
         </Container>
       )}
+
+      <Drawer open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Drawer.Content>
+          <Drawer.Header>
+            <Drawer.Title>Create Brand</Drawer.Title>
+            <Drawer.Description>Create a new brand for your catalog.</Drawer.Description>
+          </Drawer.Header>
+          <form onSubmit={handleCreateSubmit} className="space-y-4 p-6">
+            <div className="space-y-2">
+              <Label htmlFor="brand-name">Name</Label>
+              <Input
+                id="brand-name"
+                value={form.name}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, name: event.target.value }))
+                }
+                placeholder="Brand name"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brand-handle">Handle</Label>
+              <Input
+                id="brand-handle"
+                value={form.handle}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, handle: event.target.value }))
+                }
+                placeholder="brand-handle"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brand-description">Description</Label>
+              <Textarea
+                id="brand-description"
+                value={form.description}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, description: event.target.value }))
+                }
+                placeholder="Optional description"
+                rows={4}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setIsCreateOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={!isFormValid || createBrandMutation.isPending}>
+                {createBrandMutation.isPending ? "Creating..." : "Create Brand"}
+              </Button>
+            </div>
+          </form>
+        </Drawer.Content>
+      </Drawer>
     </Container>
   )
 }
