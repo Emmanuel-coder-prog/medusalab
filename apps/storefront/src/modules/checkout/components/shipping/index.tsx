@@ -6,6 +6,7 @@ import { convertToLocale } from "@lib/util/money"
 import { CheckCircleSolid, Loader } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
 import ErrorMessage from "@modules/checkout/components/error-message"
+import DeliverySlotReservation from "@modules/checkout/components/delivery-slot-reservation"
 import Divider from "@modules/common/components/divider"
 import MedusaRadio from "@modules/common/components/radio"
 import { Button, clx, Heading, Text } from "@modules/common/components/ui"
@@ -17,6 +18,7 @@ const PICKUP_OPTION_OFF = "__PICKUP_OFF"
 
 type ShippingProps = {
   cart: HttpTypes.StoreCart
+  customer?: HttpTypes.StoreCustomer | null
   availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null
 }
 
@@ -48,6 +50,7 @@ function formatAddress(address: HttpTypes.StoreCartAddress) {
 
 const Shipping: React.FC<ShippingProps> = ({
   cart,
+  customer,
   availableShippingMethods,
 }) => {
   const [isLoading, setIsLoading] = useState(false)
@@ -366,7 +369,8 @@ const Shipping: React.FC<ShippingProps> = ({
             </div>
           )}
 
-          <div>
+          <div className="space-y-4">
+            <DeliverySlotReservation cart={cart} customer={customer} />
             <ErrorMessage
               error={error}
               data-testid="delivery-option-error-message"

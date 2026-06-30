@@ -6,7 +6,13 @@ import PaymentButton from "../payment-button"
 import { useSearchParams } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 
-const Review = ({ cart }: { cart: HttpTypes.StoreCart }) => {
+const Review = ({
+  cart,
+  customer,
+}: {
+  cart: HttpTypes.StoreCart
+  customer?: HttpTypes.StoreCustomer | null
+}) => {
   const searchParams = useSearchParams()
 
   const isOpen = searchParams.get("step") === "review"
@@ -47,7 +53,11 @@ const Review = ({ cart }: { cart: HttpTypes.StoreCart }) => {
               </Text>
             </div>
           </div>
-          <PaymentButton cart={cart} data-testid="submit-order-button" />
+          <PaymentButton
+            cart={cart}
+            customer={customer}
+            data-testid="submit-order-button"
+          />
         </>
       )}
     </div>
