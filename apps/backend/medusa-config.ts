@@ -20,9 +20,30 @@ module.exports = defineConfig({
 
     
   },
-  modules: {
-    brand: {
+  modules: [
+    {
       resolve: "./src/modules/brand",
     },
+    {
+  resolve: "@medusajs/medusa/locking",
+  options: {
+    providers: [
+      {
+        resolve: "@medusajs/medusa/locking-redis",
+        id: "locking-redis",
+        is_default: true,
+        options: {
+          redisUrl: process.env.REDIS_URL,
+        },
+      },
+
+
+    ],
   },
+},
+
+{
+  resolve: "./src/modules/delivery-slot",
+},
+  ],
 })

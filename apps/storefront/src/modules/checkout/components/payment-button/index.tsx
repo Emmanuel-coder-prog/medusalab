@@ -2,6 +2,14 @@
 
 import { isManual, isStripeLike } from "@lib/constants"
 import { placeOrder } from "@lib/data/cart"
+import type {
+  StoreDeliverySlot,
+  StoreDeliverySlotReservation,
+} from "@lib/api/types/delivery-slot"
+import {
+  useDeliverySlotReservation,
+  useDeliverySlots,
+} from "@lib/hooks/delivery-slot"
 import { HttpTypes } from "@medusajs/types"
 import { Button } from "@modules/common/components/ui"
 import { useElements, useStripe } from "@stripe/react-stripe-js"
@@ -10,13 +18,183 @@ import ErrorMessage from "../error-message"
 
 type PaymentButtonProps = {
   cart: HttpTypes.StoreCart
+  customer?: HttpTypes.StoreCustomer | null
   "data-testid": string
+}
+
+type DeliverySlotValidationResult = {
+  isValid: boolean
+  message: string | null
+}
+
+function validateDeliverySlotReservation({
+  reservation,
+  slots,
+  cartId,
+  customerId,
+  regionId,
+  isAuthenticated,
+}: {
+  reservation: StoreDeliverySlotReservation | null
+  slots: StoreDeliverySlot[]
+  cartId?: string
+  customerId?: string
+  regionId?: string
+  isAuthenticated: boolean
+}): DeliverySlotValidationResult {
+  if (!isAuthenticated) {
+    return { isValid: true, message: null }
+  }
+
+  if (!cartId || !customerId || !regionId) {
+    return { isValid: true, message: null }
+  }
+
+  if (!reservation) {
+    return {
+      isValid: false,
+      message: "A delivery slot reservation is required to complete checkout.",
+    }
+  }
+
+  if (reservation.status !== "active") {
+    return {
+      isValid: false,
+      message: "Your delivery slot reservation is no longer active.",
+    }
+  }
+
+  if (reservation.cart_id !== cartId) {
+    return {
+      isValid: false,
+      message: "Your delivery slot reservation does not belong to this cart.",
+    }
+  }
+
+  if (reservation.customer_id !== customerId) {
+    return {
+      isValid: false,
+      message: "Your delivery slot reservation does not belong to your account.",
+    }
+  }
+
+  if (new Date(reservation.expires_at) <= new Date()) {
+    return {
+      isValid: false,
+      message: "Your delivery slot reservation has expired.",
+    }
+  }
+
+  const slot = slots.find(
+    (candidate) =>
+      candidate.id === reservation.slot_id || candidate.id === reservation.slot?.id
+  )
+
+  if (!slot) {
+    return {
+      isValid: false,
+      message: "Your reserved delivery slot is no longer available.",
+    }
+  }
+
+  if (slot.status !== "active") {
+    return {
+      isValid: false,
+      message: "Your reserved delivery slot is no longer available.",
+    }
+  }
+
+  const availableCapacity =
+    typeof slot.available_capacity === "number"
+      ? slot.available_capacity
+      : slot.capacity
+
+  if (availableCapacity <= 0) {
+    return {
+      isValid: false,
+      message: "Your reserved delivery slot is no longer available.",
+    }
+  }
+
+  return { isValid: true, message: null }
 }
 
 const PaymentButton: React.FC<PaymentButtonProps> = ({
   cart,
+  customer,
   "data-testid": dataTestId,
 }) => {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const isAuthenticated = Boolean(customer?.id)
+
+  const {
+    data: reservationResponse,
+    isLoading: isReservationLoading,
+    isError: isReservationError,
+    error: reservationError,
+  } = useDeliverySlotReservation(cart.id, {
+    enabled: isAuthenticated && Boolean(cart.id),
+  })
+
+  const {
+    data: slotsResponse,
+    isLoading: isSlotsLoading,
+    isError: isSlotsError,
+    error: slotsError,
+  } = useDeliverySlots(
+    {
+      region_id: cart.region?.id ?? "",
+      limit: 50,
+    },
+    {
+      enabled: isAuthenticated && Boolean(cart.region?.id),
+    }
+  )
+
+  const reservationValidationPending =
+    isAuthenticated && (isReservationLoading || isSlotsLoading)
+
+  const validateReservation = async (): Promise<DeliverySlotValidationResult> => {
+    if (!isAuthenticated) {
+      return { isValid: true, message: null }
+    }
+
+    if (reservationValidationPending) {
+      return {
+        isValid: false,
+        message: "Checking your delivery slot reservation...",
+      }
+    }
+
+    if (isReservationError) {
+      return {
+        isValid: false,
+        message:
+          reservationError instanceof Error
+            ? reservationError.message
+            : "We couldn't verify your delivery slot reservation.",
+      }
+    }
+
+    if (isSlotsError) {
+      return {
+        isValid: false,
+        message:
+          slotsError instanceof Error
+            ? slotsError.message
+            : "We couldn't verify your delivery slot reservation.",
+      }
+    }
+
+    return validateDeliverySlotReservation({
+      reservation: reservationResponse?.reservation ?? null,
+      slots: slotsResponse?.delivery_slots ?? [],
+      cartId: cart.id,
+      customerId: customer?.id,
+      regionId: cart.region?.id,
+      isAuthenticated,
+    })
+  }
   const notReady =
     !cart ||
     !cart.shipping_address ||
@@ -32,12 +210,23 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
         <StripePaymentButton
           notReady={notReady}
           cart={cart}
+          validateReservation={validateReservation}
+          reservationValidationPending={reservationValidationPending}
+          setErrorMessage={setErrorMessage}
+          errorMessage={errorMessage}
           data-testid={dataTestId}
         />
       )
     case isManual(paymentSession?.provider_id):
       return (
-        <ManualTestPaymentButton notReady={notReady} data-testid={dataTestId} />
+        <ManualTestPaymentButton
+          notReady={notReady}
+          validateReservation={validateReservation}
+          reservationValidationPending={reservationValidationPending}
+          setErrorMessage={setErrorMessage}
+          errorMessage={errorMessage}
+          data-testid={dataTestId}
+        />
       )
     default:
       return <Button disabled>Select a payment method</Button>
@@ -47,14 +236,21 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
 const StripePaymentButton = ({
   cart,
   notReady,
+  validateReservation,
+  reservationValidationPending,
+  setErrorMessage,
+  errorMessage,
   "data-testid": dataTestId,
 }: {
   cart: HttpTypes.StoreCart
   notReady: boolean
+  validateReservation: () => Promise<DeliverySlotValidationResult>
+  reservationValidationPending: boolean
+  setErrorMessage: React.Dispatch<React.SetStateAction<string | null>>
+  errorMessage: string | null
   "data-testid"?: string
 }) => {
   const [submitting, setSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const onPaymentCompleted = async () => {
     await placeOrder()
@@ -78,8 +274,17 @@ const StripePaymentButton = ({
 
   const handlePayment = async () => {
     setSubmitting(true)
+    setErrorMessage(null)
 
     if (!stripe || !elements || !card || !cart) {
+      setSubmitting(false)
+      return
+    }
+
+    const validation = await validateReservation()
+
+    if (!validation.isValid) {
+      setErrorMessage(validation.message)
       setSubmitting(false)
       return
     }
@@ -135,7 +340,7 @@ const StripePaymentButton = ({
   return (
     <>
       <Button
-        disabled={disabled || notReady}
+        disabled={disabled || notReady || reservationValidationPending}
         onClick={handlePayment}
         size="large"
         isLoading={submitting}
@@ -151,9 +356,22 @@ const StripePaymentButton = ({
   )
 }
 
-const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
+const ManualTestPaymentButton = ({
+  notReady,
+  validateReservation,
+  reservationValidationPending,
+  setErrorMessage,
+  errorMessage,
+  "data-testid": dataTestId,
+}: {
+  notReady: boolean
+  validateReservation: () => Promise<DeliverySlotValidationResult>
+  reservationValidationPending: boolean
+  setErrorMessage: React.Dispatch<React.SetStateAction<string | null>>
+  errorMessage: string | null
+  "data-testid"?: string
+}) => {
   const [submitting, setSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const onPaymentCompleted = async () => {
     await placeOrder()
@@ -165,20 +383,29 @@ const ManualTestPaymentButton = ({ notReady }: { notReady: boolean }) => {
       })
   }
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
     setSubmitting(true)
+    setErrorMessage(null)
 
-    onPaymentCompleted()
+    const validation = await validateReservation()
+
+    if (!validation.isValid) {
+      setErrorMessage(validation.message)
+      setSubmitting(false)
+      return
+    }
+
+    await onPaymentCompleted()
   }
 
   return (
     <>
       <Button
-        disabled={notReady}
+        disabled={notReady || reservationValidationPending}
         isLoading={submitting}
         onClick={handlePayment}
         size="large"
-        data-testid="submit-order-button"
+        data-testid={dataTestId}
       >
         Place order
       </Button>
