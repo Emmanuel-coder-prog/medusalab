@@ -13,6 +13,17 @@ export type ExpireDeliverySlotReservationStepInput = {
   reservation_id: string
 }
 
+
+export type ExpireReservationOutput = {
+  reservation_id: string
+  expired: boolean
+  reason: "not_found" | "not_active" | "not_yet_expired" | null
+}
+
+export type ExpireReservationCompensationData = {
+  reservation_id: string
+}
+
 export const expireDeliverySlotReservationStep = createStep(
   "expire-delivery-slot-reservation",
   async ({ reservation_id }: ExpireDeliverySlotReservationStepInput, {
@@ -30,47 +41,52 @@ export const expireDeliverySlotReservationStep = createStep(
 
     // The reservation may have been removed or changed after the job found it.
     if (!reservation) {
-      return new StepResponse({
+      const output: ExpireReservationOutput = {
         reservation_id,
         expired: false,
         reason: "not_found",
-      })
+      }
+
+      return new StepResponse(output)
     }
 
     if (reservation.status !== DeliverySlotReservationStatus.ACTIVE) {
-      return new StepResponse({
+      const output: ExpireReservationOutput = {
         reservation_id,
         expired: false,
         reason: "not_active",
-      })
+      }
+
+      return new StepResponse(output)
     }
 
     const now = new Date()
 
     if (new Date(reservation.expires_at) > now) {
-      return new StepResponse({
+      const output: ExpireReservationOutput = {
         reservation_id,
         expired: false,
         reason: "not_yet_expired",
-      })
+      }
+
+      return new StepResponse(output)
     }
 
-    const updatedReservation =
-      await deliverySlotService.updateDeliverySlotReservations({
-        id: reservation.id,
-        status: DeliverySlotReservationStatus.EXPIRED,
-        expired_at: now,
-      })
+    await deliverySlotService.updateDeliverySlotReservations({
+      id: reservation.id,
+      status: DeliverySlotReservationStatus.EXPIRED,
+      expired_at: now,
+    })
 
-    return new StepResponse(
-      {
-        reservation: updatedReservation,
-        expired: true,
-      },
-      {
-        reservation_id: reservation.id,
-      }
-    )
+    const output: ExpireReservationOutput = {
+      reservation_id: reservation.id,
+      expired: true,
+      reason: null,
+    }
+
+    return new StepResponse(output, {
+      reservation_id: reservation.id,
+    })
   },
 
   async (compensationData, { container }) => {

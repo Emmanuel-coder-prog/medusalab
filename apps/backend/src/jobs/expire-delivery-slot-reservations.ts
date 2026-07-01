@@ -1,4 +1,5 @@
 import type { MedusaContainer } from "@medusajs/framework/types"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 import { DELIVERY_SLOT_MODULE } from "../modules/delivery-slot"
 import DeliverySlotModuleService from "../modules/delivery-slot/service"
@@ -12,7 +13,7 @@ import {
 export default async function expireDeliverySlotReservationsJob(
   container: MedusaContainer
 ) {
-  const logger = container.resolve("logger")
+  const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
 
   const deliverySlotService =
     container.resolve<DeliverySlotModuleService>(DELIVERY_SLOT_MODULE)
@@ -33,14 +34,21 @@ export default async function expireDeliverySlotReservationsJob(
 
   for (const reservation of candidates) {
     try {
-      const { result } =
-        await expireDeliverySlotReservationWorkflow(container).run({
-          input: {
-            reservation_id: reservation.id,
-            cart_id: reservation.cart_id,
-            slot_id: reservation.slot_id,
-          },
-        })
+      const { result } = (await expireDeliverySlotReservationWorkflow(
+        container
+      ).run({
+        input: {
+          reservation_id: reservation.id,
+          cart_id: reservation.cart_id,
+          slot_id: reservation.slot_id,
+        },
+      })) as {
+        result: {
+          reservation_id: string
+          expired: boolean
+          reason: string | null
+        }
+      }
 
       if (result.expired) {
         expiredCount += 1
