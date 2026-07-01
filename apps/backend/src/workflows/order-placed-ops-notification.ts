@@ -18,16 +18,10 @@ export const orderPlacedOpsNotificationWorkflow = createWorkflow(
   ({ order_id }: WorkflowInput) => {
     const { data: orders } = useQueryGraphStep({
       entity: "order",
-      fields: [
-        "id",
-        "display_id",
-        "email",
-        "currency_code",
-        "total",
-        "items.id",
-        "items.title",
-        "items.quantity",
-      ],
+fields: [
+  "*",
+  "items.*",
+],
       filters: {
         id: order_id,
       },
@@ -39,11 +33,14 @@ export const orderPlacedOpsNotificationWorkflow = createWorkflow(
     const notifications = transform({ orders }, ({ orders }) => {
       const order = orders[0]
 
-const itemCount =
-  order.items?.reduce((total, item) => {
-    if (!item) return total
-    return total + (item.quantity ?? 0)
-  }, 0) ?? 0
+      console.log(JSON.stringify(order, null, 2))
+      console.dir(order, { depth: null })
+      
+    const itemCount =
+    order.items?.reduce((total, item) => {
+        if (!item) return total
+        return total + (item.quantity ?? 0)
+    }, 0) ?? 0
 
       const orderReference = order.display_id
         ? `#${order.display_id}`
