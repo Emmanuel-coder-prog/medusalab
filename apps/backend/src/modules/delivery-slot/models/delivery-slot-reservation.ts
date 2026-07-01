@@ -17,6 +17,7 @@ export const DeliverySlotReservation = model
       .default(DeliverySlotReservationStatus.ACTIVE),
 
     expires_at: model.dateTime().index(),
+     expired_at: model.dateTime().index().nullable(),
 
     slot: model.belongsTo(() => DeliverySlot, {
       mappedBy: "reservations",
@@ -30,3 +31,6 @@ export const DeliverySlotReservation = model
       on: ["cart_id", "status"],
     },
   ])
+
+
+ 
