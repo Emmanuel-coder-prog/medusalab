@@ -5,11 +5,13 @@ import { Button, Heading } from "@modules/common/components/ui"
 import CartTotals from "@modules/common/components/cart-totals"
 import Divider from "@modules/common/components/divider"
 import DiscountCode from "@modules/checkout/components/discount-code"
+import DeliverySlotReservation from "@modules/checkout/components/delivery-slot-reservation"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
 import { HttpTypes } from "@medusajs/types"
 
 type SummaryProps = {
   cart: HttpTypes.StoreCart
+  customer?: HttpTypes.StoreCustomer | null
 }
 
 function getCheckoutStep(cart: HttpTypes.StoreCart) {
@@ -22,7 +24,7 @@ function getCheckoutStep(cart: HttpTypes.StoreCart) {
   }
 }
 
-const Summary = ({ cart }: SummaryProps) => {
+const Summary = ({ cart, customer }: SummaryProps) => {
   const step = getCheckoutStep(cart)
 
   return (
@@ -31,6 +33,8 @@ const Summary = ({ cart }: SummaryProps) => {
         Summary
       </Heading>
       <DiscountCode cart={cart} />
+      <Divider />
+      <DeliverySlotReservation cart={cart} customer={customer} variant="summary" />
       <Divider />
       <CartTotals totals={cart} />
       <LocalizedClientLink
