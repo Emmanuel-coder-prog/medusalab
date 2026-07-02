@@ -6,6 +6,7 @@ import { MedusaError } from "@medusajs/framework/utils"
 
 import { DELIVERY_SLOT_MODULE } from "../../../../modules/delivery-slot"
 import DeliverySlotModuleService from "../../../../modules/delivery-slot/service"
+import { updateDeliverySlotWorkflow } from "../../../../workflows/update-delivery-slot"
 import { AdminUpdateDeliverySlotSchema } from "./validators"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
@@ -39,28 +40,19 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const deliverySlotService =
     req.scope.resolve<DeliverySlotModuleService>(DELIVERY_SLOT_MODULE)
 
-  const updatePayload: Record<string, unknown> = { ...validatedData }
-
-  if (validatedData.start_at) {
-    updatePayload.start_at = new Date(validatedData.start_at)
-  }
-
-  if (validatedData.end_at) {
-    updatePayload.end_at = new Date(validatedData.end_at)
-  }
-
-  const slot = await deliverySlotService.updateDeliverySlots({
-    id,
-    ...updatePayload,
+  const { result } = await updateDeliverySlotWorkflow(req.scope).run({
+    input: {
+      id,
+      ...validatedData,
+    },
   })
 
-  const updatedSlot = Array.isArray(slot) ? slot[0] : slot
   const activeReservations =
     await deliverySlotService.countNonExpiredActiveReservationsForSlot(id)
 
   res.json({
     delivery_slot: {
-      ...updatedSlot,
+      ...result,
       active_reservations: activeReservations,
     },
   })

@@ -1,5 +1,5 @@
 import type { ExecArgs } from "@medusajs/framework/types"
-import { Modules } from "@medusajs/framework/utils"
+import { MedusaError, Modules } from "@medusajs/framework/utils"
 
 import { DELIVERY_SLOT_MODULE } from "../modules/delivery-slot"
 import DeliverySlotModuleService from "../modules/delivery-slot/service"
@@ -47,7 +47,8 @@ export default async function seedDeliverySlots({
   const regionId = regions[0]?.id
 
   if (!regionId) {
-    throw new Error(
+    throw new MedusaError(
+      MedusaError.Types.NOT_FOUND,
       "No region found. Seed a store first or set DELIVERY_SLOT_SEED_REGION_ID."
     )
   }

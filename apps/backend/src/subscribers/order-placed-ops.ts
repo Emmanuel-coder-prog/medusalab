@@ -2,6 +2,7 @@ import type {
   SubscriberArgs,
   SubscriberConfig,
 } from "@medusajs/framework"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 import { orderPlacedOpsNotificationWorkflow } from "../workflows/order-placed-ops-notification"
 
@@ -9,7 +10,7 @@ export default async function orderPlacedOpsHandler({
   event: { data },
   container,
 }: SubscriberArgs<{ id: string }>) {
-  const logger = container.resolve("logger")
+  const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
 
   logger.info(
     `Starting post-order operations notification for order ${data.id}`
