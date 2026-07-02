@@ -6,7 +6,7 @@ import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 
 import { DELIVERY_SLOT_MODULE } from "../../../modules/delivery-slot"
 import DeliverySlotModuleService from "../../../modules/delivery-slot/service"
-import { DeliverySlotStatus } from "../../../modules/delivery-slot/types"
+import { createDeliverySlotWorkflow } from "../../../workflows/create-delivery-slot"
 import {
   AdminCreateDeliverySlotSchema,
   AdminListDeliverySlotsSchema,
@@ -66,20 +66,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const validatedData = AdminCreateDeliverySlotSchema.parse(req.body)
-  const deliverySlotService =
-    req.scope.resolve<DeliverySlotModuleService>(DELIVERY_SLOT_MODULE)
 
-  const slot = await deliverySlotService.createDeliverySlots({
-    code: validatedData.code,
-    region_id: validatedData.region_id,
-    stock_location_id: validatedData.stock_location_id ?? null,
-    start_at: new Date(validatedData.start_at),
-    end_at: new Date(validatedData.end_at),
-    capacity: validatedData.capacity,
-    status: validatedData.status ?? DeliverySlotStatus.ACTIVE,
+  const { result } = await createDeliverySlotWorkflow(req.scope).run({
+    input: validatedData,
   })
 
-  const createdSlot = Array.isArray(slot) ? slot[0] : slot
-
-  res.json({ delivery_slot: createdSlot })
+  res.json({ delivery_slot: result })
 }

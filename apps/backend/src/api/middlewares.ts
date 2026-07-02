@@ -10,6 +10,11 @@ import {
 } from "./admin/delivery-slots/validators"
 import { PostSelectDeliverySlot } from "./store/customers/me/carts/[id]/delivery-slot/validators"
 
+import { 
+  PostStoreCreateRestockSubscription,
+} from "./store/restock-subscriptions/validators"
+
+
 
 
 export default defineMiddlewares({
@@ -45,6 +50,18 @@ export default defineMiddlewares({
       methods: ["POST"],
       middlewares: [validateAndTransformBody(AdminUpdateDeliverySlotSchema)],
     },
+
+    {
+      matcher: "/store/restock-subscriptions",
+      method: "POST",
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformBody(PostStoreCreateRestockSubscription),
+      ],
+    },
+
 
   ],
 })

@@ -1,4 +1,5 @@
 import type { ExecArgs } from "@medusajs/framework/types"
+import { MedusaError } from "@medusajs/framework/utils"
 
 import { DELIVERY_SLOT_MODULE } from "../modules/delivery-slot"
 import DeliverySlotModuleService from "../modules/delivery-slot/service"
@@ -10,7 +11,8 @@ export default async function forceExpireDeliverySlotReservation({
   const [reservationId] = args
 
   if (!reservationId) {
-    throw new Error(
+    throw new MedusaError(
+      MedusaError.Types.INVALID_DATA,
       "Usage: medusa exec ./src/scripts/force-expire-delivery-slot-reservation.ts <reservation-id>"
     )
   }
