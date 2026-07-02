@@ -39,25 +39,25 @@ module.exports = defineConfig({
     ],
   },
 },
-{
-   resolve: "@medusajs/medusa/event-bus-redis",
-      options: { 
-        redisUrl: process.env.EVENTS_REDIS_URL,
-        // suggested additional options for production use
-        jobOptions: {
-          removeOnComplete: {
-            // keep jobs for 1 hour or up to 1000 jobs
-            age: 3600,
-            count: 1000,
-          },
-          removeOnFail: {
-            // keep jobs for 1 hour or up to 1000 jobs
-            age: 3600,
-            count: 1000,
-          },
-        },
-      },
-    },
+// {
+//    resolve: "@medusajs/medusa/event-bus-redis",
+//       options: { 
+//         redisUrl: process.env.EVENTS_REDIS_URL,
+//         // suggested additional options for production use
+//         jobOptions: {
+//           removeOnComplete: {
+//             // keep jobs for 1 hour or up to 1000 jobs
+//             age: 3600,
+//             count: 1000,
+//           },
+//           removeOnFail: {
+//             // keep jobs for 1 hour or up to 1000 jobs
+//             age: 3600,
+//             count: 1000,
+//           },
+//         },
+//       },
+//     },
 
 {
   resolve: "./src/modules/delivery-slot",
