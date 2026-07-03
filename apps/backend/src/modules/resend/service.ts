@@ -14,22 +14,26 @@ import {
 import { orderPlacedEmail } from "./emails/order-placed";
 import { userInvitedEmail } from "./emails/user-invited";
 import { passwordResetEmail } from "./emails/password-reset";
+import variantRestockEmail from "./emails/variant-restock";
 
 enum Templates {
   ORDER_PLACED = "order-placed",
   USER_INVITED = "user-invited",
   PASSWORD_RESET = "password-reset",
+  VARIANT_RESTOCK = "variant-restock",
 }
 
 const templates: {[key in Templates]?: (props: unknown) => React.ReactNode} = {
   [Templates.ORDER_PLACED]: orderPlacedEmail,
   [Templates.USER_INVITED]: userInvitedEmail,
-  [Templates.PASSWORD_RESET]: passwordResetEmail
+  [Templates.PASSWORD_RESET]: passwordResetEmail,
+  [Templates.VARIANT_RESTOCK]: variantRestockEmail,
 }
 
 type ResendOptions = {
   api_key: string
   from: string
+  test_recipient?: string
   html_templates?: Record<string, {
     subject?: string
     content: string
@@ -96,6 +100,8 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
         return "You're Invited!"
       case Templates.PASSWORD_RESET:
         return "Reset Your Password"
+      case Templates.VARIANT_RESTOCK:
+        return "Back in Stock"
       default:
         return "New Email"
     }
@@ -107,14 +113,25 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
     const template = this.getTemplate(notification.template as Templates)
 
     if (!template) {
-      this.logger.error(`Couldn't find an email template for ${notification.template}. The valid options are ${Object.values(Templates)}`)
-      return {}
+      const validOptions = Object.values(Templates).join(",")
+      this.logger.error(`Couldn't find an email template for ${notification.template}. The valid options are ${validOptions}`)
+      throw new MedusaError(
+        MedusaError.Types.INVALID_DATA,
+        `Couldn't find an email template for ${notification.template}.`
+      )
     }
 
+    const recipient = this.options.test_recipient || notification.to
     const commonOptions = {
       from: this.options.from,
-      to: [notification.to],
+      to: [recipient],
       subject: this.getTemplateSubject(notification.template as Templates),
+    }
+
+    if (this.options.test_recipient && recipient !== notification.to) {
+      this.logger.info(
+        `Resend test recipient override enabled. Sending email to ${recipient} instead of ${notification.to}`
+      )
     }
 
     let emailOptions: CreateEmailOptions
@@ -138,7 +155,10 @@ class ResendNotificationProviderService extends AbstractNotificationProviderServ
       } else {
         this.logger.error("Failed to send email: unknown error")
       }
-      return {}
+      throw new MedusaError(
+        MedusaError.Types.UNEXPECTED_STATE,
+        "Failed to send email through Resend."
+      )
     }
 
     return { id: data.id }

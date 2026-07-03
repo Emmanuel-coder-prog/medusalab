@@ -4,11 +4,13 @@ import {
 import { sendRestockNotificationsWorkflow } from "../workflows/send-restock-notifications";
 
 export default async function myCustomJob(container: MedusaContainer) {
+  console.log("[check-restock] Job started")
+
   await sendRestockNotificationsWorkflow(container)
     .run()
 }
 
 export const config = {
   name: "check-restock",
-  schedule: "0 0 * * *", // For debugging, change to `* * * * *`
+  schedule: "* * * * *", // For debugging, change to `* * * * *`
 };

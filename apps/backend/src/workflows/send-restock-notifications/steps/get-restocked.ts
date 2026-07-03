@@ -1,4 +1,4 @@
-import { getVariantAvailability, promiseAll } from "@medusajs/framework/utils"
+import { getVariantAvailability, promiseAll, ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { createStep, StepResponse } from "@medusajs/framework/workflows-sdk"
 
 type GetRestockedStepInput = {
@@ -10,7 +10,7 @@ export const getRestockedStep = createStep(
   "get-restocked",
   async (input: GetRestockedStepInput, { container }) => {
     const restocked: GetRestockedStepInput = []
-    const query = container.resolve("query")
+    const query = container.resolve(ContainerRegistrationKeys.QUERY)
     
     await promiseAll(
       input.map(async (restockSubscription) => {

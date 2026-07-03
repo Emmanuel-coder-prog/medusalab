@@ -11,8 +11,16 @@ export const deleteRestockSubscriptionStep = createStep(
   async (restockSubscriptions: DeleteRestockSubscriptionsStepInput, { container }) => {
     const restockModuleService: RestockModuleService = container.resolve(RESTOCK_MODULE)
 
+    console.log(
+      `[delete-restock-subscriptions] Deleting ${restockSubscriptions.length} subscription(s)`
+    )
+
     await restockModuleService.deleteRestockSubscriptions(
       restockSubscriptions.map((subscription) => subscription.id)
+    )
+
+    console.log(
+      `[delete-restock-subscriptions] Deleted ${restockSubscriptions.length} subscription(s)`
     )
     
     return new StepResponse(undefined, restockSubscriptions)
