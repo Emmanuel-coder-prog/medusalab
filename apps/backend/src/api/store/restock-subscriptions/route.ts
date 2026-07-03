@@ -35,5 +35,8 @@ export async function POST(
       }
     })
 
-  return res.sendStatus(200)
+  return res.status(200).json({
+    success: true,
+    message: "Successfully subscribed to restock notification.",
+  })
 }

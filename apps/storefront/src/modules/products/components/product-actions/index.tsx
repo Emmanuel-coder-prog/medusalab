@@ -11,6 +11,7 @@ import { useParams, usePathname, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
 import ProductPrice from "../product-price"
 import MobileActions from "./mobile-actions"
+import RestockSubscriptionForm from "../../../../components/restock/restock-subscription-form"
 import { useRouter } from "next/navigation"
 
 type ProductActionsProps = {
@@ -58,6 +59,30 @@ export default function ProductActions({
       return isEqual(variantOptions, options)
     })
   }, [product.variants, options])
+
+  const availableQuantity = useMemo(() => {
+    if (!selectedVariant || !selectedVariant.manage_inventory) {
+      return undefined
+    }
+
+    return selectedVariant.inventory_quantity ?? 0
+  }, [selectedVariant])
+
+  const isOutOfStock = useMemo(() => {
+    if (!selectedVariant) {
+      return false
+    }
+
+    if (!selectedVariant.manage_inventory) {
+      return false
+    }
+
+    if (selectedVariant.allow_backorder) {
+      return false
+    }
+
+    return (selectedVariant.inventory_quantity ?? 0) <= 0
+  }, [selectedVariant])
 
   // update the options when a variant is selected
   const setOptionValue = (optionId: string, value: string) => {
@@ -162,37 +187,46 @@ export default function ProductActions({
 
         <ProductPrice product={product} variant={selectedVariant} />
 
-        <Button
-          onClick={handleAddToCart}
-          disabled={
-            !inStock ||
-            !selectedVariant ||
-            !!disabled ||
-            isAdding ||
-            !isValidVariant
-          }
-          variant="primary"
-          className="w-full h-10"
-          isLoading={isAdding}
-          data-testid="add-product-button"
-        >
-          {!selectedVariant && !options
-            ? "Select variant"
-            : !inStock || !isValidVariant
-            ? "Out of stock"
-            : "Add to cart"}
-        </Button>
-        <MobileActions
-          product={product}
-          variant={selectedVariant}
-          options={options}
-          updateOptions={setOptionValue}
-          inStock={inStock}
-          handleAddToCart={handleAddToCart}
-          isAdding={isAdding}
-          show={!inView}
-          optionsDisabled={!!disabled || isAdding}
-        />
+        {isOutOfStock && selectedVariant ? (
+          <RestockSubscriptionForm
+            variantId={selectedVariant.id}
+            className="w-full"
+          />
+        ) : (
+          <>
+            <Button
+              onClick={handleAddToCart}
+              disabled={
+                !inStock ||
+                !selectedVariant ||
+                !!disabled ||
+                isAdding ||
+                !isValidVariant
+              }
+              variant="primary"
+              className="w-full h-10"
+              isLoading={isAdding}
+              data-testid="add-product-button"
+            >
+              {!selectedVariant && !options
+                ? "Select variant"
+                : !inStock || !isValidVariant
+                ? "Out of stock"
+                : "Add to cart"}
+            </Button>
+            <MobileActions
+              product={product}
+              variant={selectedVariant}
+              options={options}
+              updateOptions={setOptionValue}
+              inStock={inStock}
+              handleAddToCart={handleAddToCart}
+              isAdding={isAdding}
+              show={!inView}
+              optionsDisabled={!!disabled || isAdding}
+            />
+          </>
+        )}
       </div>
     </>
   )
