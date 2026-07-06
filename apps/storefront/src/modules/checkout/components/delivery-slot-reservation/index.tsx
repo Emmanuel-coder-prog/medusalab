@@ -99,8 +99,7 @@ const DeliverySlotReservation = ({
   }
 
   const activeSlots = slots.filter(
-    (slot) =>
-      slot.status === "active" && new Date(slot.start_at) > new Date()
+    (slot) => slot.status === "active" && new Date(slot.end_at) > new Date()
   )
   const hasCurrentReservation = Boolean(
     currentReservation?.status === "active" && currentReservation.slot_id

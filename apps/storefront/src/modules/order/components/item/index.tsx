@@ -12,8 +12,9 @@ type ItemProps = {
 }
 
 const Item = ({ item, currencyCode }: ItemProps) => {
-const isGift = item.metadata?.is_gift === "true"
-const giftMessage = item.metadata?.gift_message as string
+  const isGift = item.metadata?.is_gift === "true"
+  const giftMessage = item.metadata?.gift_message as string
+  const packagingNote = item.metadata?.packaging_note as string
   return (
     <Table.Row className="w-full" data-testid="product-row">
       <Table.Cell className="!pl-0 p-4 w-24">
@@ -31,11 +32,22 @@ const giftMessage = item.metadata?.gift_message as string
         </Text>
         <LineItemOptions variant={item.variant} data-testid="product-variant" />
       </Table.Cell>
-      {isGift && <Text
-  className="inline-block txt-medium text-ui-fg-subtle w-full overflow-hidden text-ellipsis"
->
-  Gift Message: {giftMessage || "No gift message provided"}
-</Text>}
+      {(isGift || packagingNote) && (
+        <div className="flex flex-col gap-1">
+          {isGift && (
+            <Text
+              className="inline-block txt-medium text-ui-fg-subtle w-full overflow-hidden text-ellipsis"
+            >
+              Gift Message: {giftMessage || "No gift message provided"}
+            </Text>
+          )}
+          <Text
+            className="inline-block txt-medium text-ui-fg-subtle w-full overflow-hidden text-ellipsis"
+          >
+            Packaging Note: {packagingNote || "No packaging note provided"}
+          </Text>
+        </div>
+      )}
 
       <Table.Cell className="!pr-0">
         <span className="!pr-0 flex flex-col items-end h-full justify-center">

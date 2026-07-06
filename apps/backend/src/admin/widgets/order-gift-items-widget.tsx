@@ -21,6 +21,9 @@ const OrderGiftItemsWidget = ({ data }: DetailWidgetProps<AdminOrder>) => {
             <Text className="text-sm text-gray-600">
               Gift Message: {item.metadata?.gift_message || "(No message)"}
             </Text>
+            <Text className="text-sm text-gray-600">
+              Packaging Note: {item.metadata?.packaging_note || "(No packaging note)"}
+            </Text>
           </div>
         ))}
       </div>

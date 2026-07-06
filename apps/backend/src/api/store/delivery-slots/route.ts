@@ -36,7 +36,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     filters: {
       ...(regionId ? { region_id: regionId } : {}),
       status: DeliverySlotStatus.ACTIVE,
-      start_at: {
+      end_at: {
         $gt: now,
       },
     },
