@@ -35,13 +35,13 @@ const [isEditingGiftMessage, setIsEditingGiftMessage] = useState(false)
 const isGift = item.metadata?.is_gift === "true"
 const giftMessage = item.metadata?.gift_message as string
 
-const [instructions, setInstructions] = useState(
-  item.metadata?.package_instructions as string || ""
+const [packagingNoteUpdating, setPackagingNoteUpdating] = useState(false)
+const [newPackagingNote, setNewPackagingNote] = useState(
+  item.metadata?.packaging_note as string || ""
 )
+const [isEditingPackagingNote, setIsEditingPackagingNote] = useState(false)
 
-const [saving, setSaving] = useState(false)
-
-const [editing, setEditing] = useState(false)
+const packagingNote = item.metadata?.packaging_note as string
 
 
 
@@ -87,21 +87,21 @@ const handleGiftToggle = async (checked: boolean) => {
   }
 }
 
-const handleSaveInstructions = async () => {
-  setSaving(true)
+const handleSavePackagingNote = async () => {
+  setPackagingNoteUpdating(true)
 
   try {
     await updateLineItem({
       lineId: item.id,
       quantity: item.quantity,
       metadata: {
-        package_instructions: instructions,
+        packaging_note: newPackagingNote,
       },
     })
 
-    setEditing(false)
+    setIsEditingPackagingNote(false)
   } finally {
-    setSaving(false)
+    setPackagingNoteUpdating(false)
   }
 }
 
@@ -134,6 +134,15 @@ const handleStartEdit = () => {
 const handleCancelEdit = () => {
   setNewGiftMessage(giftMessage || "")
   setIsEditingGiftMessage(false)
+}
+
+const handleStartEditPackagingNote = () => {
+  setIsEditingPackagingNote(true)
+}
+
+const handleCancelEditPackagingNote = () => {
+  setNewPackagingNote(packagingNote || "")
+  setIsEditingPackagingNote(false)
 }
 
 
@@ -255,6 +264,61 @@ const handleCancelEdit = () => {
               )}
             </div>
           )}
+
+          <div className="mb-3">
+            <div className="flex items-center gap-2">
+              <Text className="text-sm font-medium text-ui-fg-base">
+                Packaging Note
+              </Text>
+              <Text className="text-xs text-ui-fg-subtle">(optional)</Text>
+            </div>
+            {isEditingPackagingNote ? (
+              <div className="space-y-2 mt-3">
+                <Textarea
+                  placeholder="Add packaging instructions..."
+                  value={newPackagingNote}
+                  onChange={(e) => setNewPackagingNote(e.target.value)}
+                  disabled={packagingNoteUpdating}
+                  className="w-full"
+                  rows={2}
+                />
+                <div className="flex justify-end gap-2">
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    onClick={handleCancelEditPackagingNote}
+                    disabled={packagingNoteUpdating}
+                    className="text-xs px-3 py-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="primary"
+                    onClick={handleSavePackagingNote}
+                    disabled={packagingNoteUpdating || newPackagingNote === packagingNote}
+                    className="text-xs px-3 py-1"
+                  >
+                    {packagingNoteUpdating ? <Spinner /> : "Save"}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between mt-3">
+                <Text className="text-sm text-ui-fg-subtle">
+                  {packagingNote || "No packaging note added"}
+                </Text>
+                <Button
+                  size="small"
+                  variant="secondary"
+                  onClick={handleStartEditPackagingNote}
+                  className="text-xs px-2 py-1"
+                >
+                  {packagingNote ? "Edit" : "Add"}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Quantity and Actions */}
