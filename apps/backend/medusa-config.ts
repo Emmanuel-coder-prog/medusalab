@@ -8,7 +8,11 @@ module.exports = defineConfig({
   },
 
   projectConfig: {
-    workerMode: process.env.MEDUSA_WORKER_MODE as "shared" | "worker" | "server",
+    workerMode:
+      (process.env.MEDUSA_WORKER_MODE as
+        | "shared"
+        | "server"
+        | "worker") ?? "shared",
     databaseUrl: process.env.DATABASE_URL,
     http: {
       storeCors: process.env.STORE_CORS!,
