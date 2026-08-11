@@ -10,12 +10,10 @@ import {
 } from "./admin/delivery-slots/validators"
 import { PostSelectDeliverySlot } from "./store/customers/me/carts/[id]/delivery-slot/validators"
 
-import { 
+import {
   PostStoreCreateRestockSubscription,
 } from "./store/restock-subscriptions/validators"
-
-
-
+import { PostSelectB2BOrganization } from "./store/customers/me/b2b/carts/[id]/organization/validators"
 
 export default defineMiddlewares({
   routes: [
@@ -61,7 +59,15 @@ export default defineMiddlewares({
         validateAndTransformBody(PostStoreCreateRestockSubscription),
       ],
     },
-
-
+    {
+      matcher: "/store/customers/me/b2b/carts/:id/organization",
+      methods: ["POST"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformBody(PostSelectB2BOrganization),
+      ],
+    },
   ],
 })
