@@ -20,13 +20,23 @@ export default async function expireDeliverySlotReservationsJob(
 
   const now = new Date()
 
-  const candidates =
+  const activeCandidates =
     await deliverySlotService.listDeliverySlotReservations({
       status: DeliverySlotReservationStatus.ACTIVE,
       expires_at: {
         $lte: now,
       },
     })
+
+  const staleCheckoutCandidates =
+    await deliverySlotService.listDeliverySlotReservations({
+      status: DeliverySlotReservationStatus.CHECKOUT_PENDING,
+      checkout_expires_at: {
+        $lte: now,
+      },
+    })
+
+  const candidates = [...activeCandidates, ...staleCheckoutCandidates]
 
   let expiredCount = 0
   let skippedCount = 0

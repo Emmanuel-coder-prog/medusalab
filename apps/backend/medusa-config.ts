@@ -66,7 +66,9 @@ module.exports = defineConfig({
 {
   resolve: "./src/modules/delivery-slot",
 },
-
+    {
+      resolve: "./src/modules/hubloft",
+    },
 
     {
       resolve: "@medusajs/medusa/notification",
