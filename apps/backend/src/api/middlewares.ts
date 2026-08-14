@@ -14,6 +14,8 @@ import {
   PostStoreCreateRestockSubscription,
 } from "./store/restock-subscriptions/validators"
 import { PostSelectB2BOrganization } from "./store/customers/me/b2b/carts/[id]/organization/validators"
+import { PostSubmitB2BPurchaseRequest } from "./store/customers/me/b2b/purchase-requests/validators"
+import { PostPurchaseRequestDecision } from "./store/customers/me/b2b/purchase-requests/[id]/decision/validators"
 
 export default defineMiddlewares({
   routes: [
@@ -67,6 +69,26 @@ export default defineMiddlewares({
           allowUnauthenticated: true,
         }),
         validateAndTransformBody(PostSelectB2BOrganization),
+      ],
+    },
+    {
+      matcher: "/store/customers/me/b2b/purchase-requests",
+      methods: ["POST"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformBody(PostSubmitB2BPurchaseRequest),
+      ],
+    },
+    {
+      matcher: "/store/customers/me/b2b/purchase-requests/:id/decision",
+      methods: ["POST"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformBody(PostPurchaseRequestDecision),
       ],
     },
   ],

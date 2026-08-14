@@ -95,6 +95,9 @@ module.exports = defineConfig({
     {
       resolve: "./src/modules/b2b-organization",
     },
+    {
+      resolve: "./src/modules/b2b-purchase",
+    },
 
   ],
 })
