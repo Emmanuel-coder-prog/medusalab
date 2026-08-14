@@ -117,7 +117,7 @@ export const claimDeliverySlotForCheckoutStep = createStep(
   },
 
   async (
-    compensationData: { reservation_id?: string } | undefined,
+    compensationData: any,
     { container }
   ) => {
     if (!compensationData?.reservation_id) {

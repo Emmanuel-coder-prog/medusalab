@@ -5,7 +5,7 @@ import B2BOrganizationModule from "../modules/b2b-organization"
 
 export default defineLink(
   {
-    linkable: B2BOrganizationModule.linkable.b2bCartContext,
+    linkable: (B2BOrganizationModule.linkable as any).b2bCartContext,
     field: "cart_id",
   },
   CartModule.linkable.cart,
