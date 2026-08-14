@@ -8,7 +8,11 @@ module.exports = defineConfig({
   },
 
   projectConfig: {
-    workerMode: process.env.MEDUSA_WORKER_MODE as "shared" | "worker" | "server",
+    workerMode:
+      (process.env.MEDUSA_WORKER_MODE as
+        | "shared"
+        | "server"
+        | "worker") ?? "shared",
     databaseUrl: process.env.DATABASE_URL,
     http: {
       storeCors: process.env.STORE_CORS!,
@@ -62,7 +66,9 @@ module.exports = defineConfig({
 {
   resolve: "./src/modules/delivery-slot",
 },
-
+    {
+      resolve: "./src/modules/hubloft",
+    },
 
     {
       resolve: "@medusajs/medusa/notification",
@@ -86,8 +92,12 @@ module.exports = defineConfig({
       resolve: "./src/modules/restock",
     },
 
-    
-
+    {
+      resolve: "./src/modules/b2b-organization",
+    },
+    {
+      resolve: "./src/modules/b2b-purchase",
+    },
 
   ],
 })
