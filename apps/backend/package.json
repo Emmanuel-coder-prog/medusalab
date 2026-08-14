@@ -13,7 +13,7 @@
     "medusa"
   ],
   "scripts": {
-    "build": "medusa build",
+    "build": "cross-env XDG_CONFIG_HOME=./.config medusa build",
     "start": "medusa start",
     "dev": "medusa develop",
     "predeploy": "medusa db:migrate",
@@ -42,7 +42,8 @@
     "react-i18next": "13.5.0",
     "react-router-dom": "6.30.3",
     "resend": "^6.16.0",
-    "zod": "4.2.0"
+    "zod": "4.2.0",
+    "bignumber.js": "^9.1.1"
   },
   "devDependencies": {
     "@medusajs/test-utils": "2.17.0",
@@ -61,7 +62,11 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.6.2",
     "vite": "^5.4.14",
-    "yalc": "^1.0.0-pre.53"
+    "yalc": "^1.0.0-pre.53",
+    "cross-env": "^7.0.3"
+  },
+  "overrides": {
+    "@medusajs/workflows-sdk": "2.17.0"
   },
   "engines": {
     "node": ">=20"

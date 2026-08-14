@@ -42,7 +42,7 @@ type PreparePurchaseRequestOutput = {
   organization: any
   member: any
   cart_context: any
-  request_total: string
+  request_total: number
   currency_code: string
   policy_snapshot: Record<string, any>
   cart_snapshot: Record<string, any>
@@ -111,7 +111,7 @@ const preparePurchaseRequestStep = createStep(
       )
     }
 
-    const currencyCode = cart.region?.currency_code ?? cart.currency_code
+    const currencyCode = (cart as any).region?.currency_code ?? cart.currency_code
 
     if (!currencyCode) {
       throw new MedusaError(
@@ -120,9 +120,9 @@ const preparePurchaseRequestStep = createStep(
       )
     }
 
-    const requestTotal = cart.items.reduce((sum: any, item: any) => {
+    const requestTotal = (cart.items || []).reduce((sum: number, item: any) => {
       const unitPrice = item.unit_price ?? item.original_total ?? 0
-      return sum.plus(unitPrice * item.quantity)
+      return sum + unitPrice * item.quantity
     }, 0)
 
     const policySnapshot = {
@@ -165,7 +165,7 @@ const preparePurchaseRequestStep = createStep(
       organization,
       member,
       cart_context: cartContext,
-      request_total: requestTotal.toString(),
+      request_total: requestTotal,
       currency_code: currencyCode,
       policy_snapshot: policySnapshot,
       cart_snapshot: cartSnapshot,
@@ -196,7 +196,7 @@ const createPurchaseRequestStep = createStep(
       order_change_id: input.order_change_id ?? null,
       status: B2BPurchaseRequestStatus.PENDING_INTERNAL_APPROVAL,
       currency_code: input.currency_code,
-      requested_total: input.request_total,
+      requested_total: Number(input.request_total),
       cart_snapshot: input.cart_snapshot,
       policy_snapshot: input.policy_snapshot,
       submitted_at: new Date(),
@@ -216,7 +216,7 @@ export const submitPurchaseRequestWorkflow = createWorkflow(
       ttl: 120,
     })
 
-    const prepared = preparePurchaseRequestStep(input)
+    const prepared = (preparePurchaseRequestStep as any)(input)
 
     const { data: cartData } = useQueryGraphStep({
       entity: "cart",
@@ -237,7 +237,7 @@ export const submitPurchaseRequestWorkflow = createWorkflow(
           metadata: item.metadata,
         })) : []
 
-        const preparedData = prepared.data
+        const preparedData = (prepared as any).data
 
         return {
           email: "",
@@ -250,11 +250,11 @@ export const submitPurchaseRequestWorkflow = createWorkflow(
       }
     )
 
-    const { data: draftOrder } = createOrderWorkflow.runAsStep({
+    const { data: draftOrder } = (createOrderWorkflow.runAsStep as any)({
       input: createOrderInput,
     })
 
-    const { data: orderChange } = beginOrderEditOrderWorkflow.runAsStep({
+    const { data: orderChange } = (beginOrderEditOrderWorkflow.runAsStep as any)({
       input: {
         order_id: draftOrder.id,
         created_by: input.customer_id,
@@ -263,7 +263,7 @@ export const submitPurchaseRequestWorkflow = createWorkflow(
     })
 
     const requestInput = transform({ prepared, draftOrder, orderChange }, ({ prepared, draftOrder, orderChange }) => {
-      const p = prepared.data
+      const p = (prepared as any).data
       return {
         cart: p.cart,
         organization: p.organization,
@@ -278,7 +278,7 @@ export const submitPurchaseRequestWorkflow = createWorkflow(
       }
     })
 
-    const request = createPurchaseRequestStep(requestInput)
+    const request = (createPurchaseRequestStep as any)(requestInput)
 
     releaseLockStep({ key: input.cart_id })
 

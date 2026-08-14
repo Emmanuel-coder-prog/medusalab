@@ -93,7 +93,7 @@ export const confirmDeliverySlotStep = createStep(
     )
   },
 
-  async (compensationData, { container }) => {
+  async (compensationData: any, { container }) => {
     if (!compensationData?.reservation_id) {
       return
     }

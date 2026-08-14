@@ -38,39 +38,39 @@ export const completeCartWithDeliverySlotWorkflow =
       }).config({ name: "acquire-cart-lock" })
 
       const reservation =
-        getCartDeliveryReservationStep({
+        (getCartDeliveryReservationStep as any)({
           cart_id: input.cart_id,
-        })
+        });
 
       const slotLockKey = transform(
         { reservation },
         ({ reservation }) =>
           `delivery-slot:${reservation.slot_id}`
-      )
+      );
 
       acquireLockStep({
         key: slotLockKey,
         timeout: 30,
         ttl: 120,
-      }).config({ name: "acquire-slot-lock" })
+      }).config({ name: "acquire-slot-lock" });
 
-      claimDeliverySlotForCheckoutStep({
+      (claimDeliverySlotForCheckoutStep as any)({
         cart_id: input.cart_id,
         reservation_id: reservation.reservation_id,
       })
 
       const { id: order_id } =
-        completeCartWorkflow.runAsStep({
+        (completeCartWorkflow.runAsStep as any)({
           input: {
             id: input.cart_id,
           },
         })
 
       const confirmedReservation =
-        confirmDeliverySlotStep({
+        (confirmDeliverySlotStep as any)({
           reservation_id: reservation.reservation_id,
           order_id,
-        })
+        });
 
       releaseLockStep({
         key: slotLockKey,

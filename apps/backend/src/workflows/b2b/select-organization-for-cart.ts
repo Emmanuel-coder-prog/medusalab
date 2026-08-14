@@ -135,7 +135,7 @@ const selectOrganizationForCartStep = createStep(
     )
   },
 
-  async (compensationData, { container }) => {
+  async (compensationData: any, { container }) => {
     if (!compensationData?.created_context_id) {
       return
     }
@@ -160,7 +160,7 @@ export const selectOrganizationForCartWorkflow = createWorkflow(
       ttl: 60,
     })
 
-    const result = selectOrganizationForCartStep(input)
+    const result = (selectOrganizationForCartStep as any)(input)
 
     releaseLockStep({
       key: input.cart_id,
