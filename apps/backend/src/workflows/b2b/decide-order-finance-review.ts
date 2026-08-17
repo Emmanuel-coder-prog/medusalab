@@ -227,8 +227,13 @@ export const decideB2BOrderFinanceReviewWorkflow =
   createWorkflow(
     "decide-b2b-order-finance-review",
     (input: Input) => {
+      const financeReviewLockKey = transform(
+        { input },
+        ({ input }) => `b2b-finance-review:${input.finance_review_id}`
+      )
+
       acquireLockStep({
-        key: `b2b-finance-review:${input.finance_review_id}`,
+        key: financeReviewLockKey,
         timeout: 15,
         ttl: 60,
       })
@@ -251,7 +256,7 @@ export const decideB2BOrderFinanceReviewWorkflow =
       })
 
       releaseLockStep({
-        key: `b2b-finance-review:${input.finance_review_id}`,
+        key: financeReviewLockKey,
       })
 
       return new WorkflowResponse(result)

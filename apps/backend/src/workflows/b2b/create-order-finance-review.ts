@@ -2,6 +2,7 @@ import {
   createStep,
   createWorkflow,
   StepResponse,
+  transform,
   WorkflowResponse,
 } from "@medusajs/framework/workflows-sdk"
 
@@ -104,8 +105,13 @@ export const createB2BOrderFinanceReviewWorkflow =
   createWorkflow(
     "create-b2b-order-finance-review",
     (input: Input) => {
+      const financeOrderLockKey = transform(
+        { input },
+        ({ input }) => `b2b-finance-order:${input.order_id}`
+      )
+
       acquireLockStep({
-        key: `b2b-finance-order:${input.order_id}`,
+        key: financeOrderLockKey,
         timeout: 15,
         ttl: 60,
       })
@@ -113,7 +119,7 @@ export const createB2BOrderFinanceReviewWorkflow =
       const result = createFinanceReviewStep(input)
 
       releaseLockStep({
-        key: `b2b-finance-order:${input.order_id}`,
+        key: financeOrderLockKey,
       })
 
       return new WorkflowResponse(result)
