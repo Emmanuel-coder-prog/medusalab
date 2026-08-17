@@ -14,8 +14,9 @@ import {
   PostStoreCreateRestockSubscription,
 } from "./store/restock-subscriptions/validators"
 import { PostSelectB2BOrganization } from "./store/customers/me/b2b/carts/[id]/organization/validators"
-import { PostSubmitB2BPurchaseRequest } from "./store/customers/me/b2b/purchase-requests/validators"
+import { PostB2BPurchaseRequest } from "./store/customers/me/b2b/purchase-requests/validators"
 import { PostPurchaseRequestDecision } from "./store/customers/me/b2b/purchase-requests/[id]/decision/validators"
+import { PostFinanceDecision } from "./admin/b2b/finance-reviews/[id]/decision/validators"
 
 export default defineMiddlewares({
   routes: [
@@ -78,7 +79,7 @@ export default defineMiddlewares({
         authenticate("customer", ["bearer", "session"], {
           allowUnauthenticated: true,
         }),
-        validateAndTransformBody(PostSubmitB2BPurchaseRequest),
+        validateAndTransformBody(PostB2BPurchaseRequest),
       ],
     },
     {
@@ -90,6 +91,11 @@ export default defineMiddlewares({
         }),
         validateAndTransformBody(PostPurchaseRequestDecision),
       ],
+    },
+    {
+      matcher: "/admin/b2b/finance-reviews/:id/decision",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(PostFinanceDecision)],
     },
   ],
 })

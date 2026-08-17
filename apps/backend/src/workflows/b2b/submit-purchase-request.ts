@@ -30,261 +30,148 @@ import {
 } from "../../modules/b2b-purchase/types"
 import { isAtOrAbove } from "../../modules/b2b-purchase/money"
 
-type SubmitPurchaseRequestInput = {
+
+import {
+  OrderStatus,
+} from "@medusajs/framework/utils"
+
+import {
+  preparePurchaseRequestStep,
+} from "./steps/prepare-purchase-request"
+
+import {
+  createPurchaseRequestStep,
+} from "./steps/create-purchase-request"
+
+type Input = {
   cart_id: string
   customer_id: string
-  organization_id: string
-  member_id: string
+  purchase_order_number?: string
 }
 
-type PreparePurchaseRequestOutput = {
-  cart: any
-  organization: any
-  member: any
-  cart_context: any
-  request_total: number
-  currency_code: string
-  policy_snapshot: Record<string, any>
-  cart_snapshot: Record<string, any>
-  draft_order_id?: string
-  order_change_id?: string
-}
+export const submitB2BPurchaseRequestWorkflow =
+  createWorkflow(
+    "submit-b2b-purchase-request",
+    (input: Input) => {
+      acquireLockStep({
+        key: input.cart_id,
+        timeout: 15,
+        ttl: 90,
+      })
 
-const preparePurchaseRequestStep = createStep(
-  "prepare-b2b-purchase-request",
-  async (input: SubmitPurchaseRequestInput, { container }) => {
-    const cartModuleService = container.resolve(Modules.CART)
-    const b2bOrganizationService =
-      container.resolve<B2BOrganizationModuleService>(
-        B2B_ORGANIZATION_MODULE
-      )
+      const { data: carts } = useQueryGraphStep({
+        entity: "cart",
+        fields: [
+          "id",
+          "customer_id",
+          "email",
+          "sales_channel_id",
+          "currency_code",
+          "region_id",
+          "billing_address.*",
+          "shipping_address.*",
+          "shipping_methods.*",
+          "promotions.code",
+          "items.*",
+          "total",
+        ],
+        filters: {
+          id: input.cart_id,
+        },
+        options: {
+          throwIfKeyNotFound: true,
+        },
+      })
 
-    const cart = await cartModuleService.retrieveCart(input.cart_id)
-
-    if (cart.customer_id !== input.customer_id) {
-      throw new MedusaError(
-        MedusaError.Types.UNAUTHORIZED,
-        "This cart does not belong to the authenticated customer."
-      )
-    }
-
-    const organizations = await b2bOrganizationService.listB2BOrganizations({
-      id: input.organization_id,
-      status: B2BOrganizationStatus.ACTIVE,
-    })
-
-    const organization = organizations[0]
-
-    if (!organization) {
-      throw new MedusaError(
-        MedusaError.Types.NOT_FOUND,
-        "Active B2B organization was not found."
-      )
-    }
-
-    const members = await b2bOrganizationService.listB2BOrganizationMembers({
-      id: input.member_id,
-      organization_id: input.organization_id,
-      customer_id: input.customer_id,
-      status: B2BOrganizationMemberStatus.ACTIVE,
-    })
-
-    const member = members[0]
-
-    if (!member) {
-      throw new MedusaError(
-        MedusaError.Types.UNAUTHORIZED,
-        "You are not an active member of this organization."
-      )
-    }
-
-    const contexts = await b2bOrganizationService.listB2BCartContexts({
-      cart_id: cart.id,
-    })
-
-    const cartContext = contexts[0]
-
-    if (!cartContext || cartContext.organization_id !== organization.id) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        "This cart is not associated with the selected organization."
-      )
-    }
-
-    const currencyCode = (cart as any).region?.currency_code ?? cart.currency_code
-
-    if (!currencyCode) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        "Cart currency could not be resolved."
-      )
-    }
-
-    const requestTotal = (cart.items || []).reduce((sum: number, item: any) => {
-      const unitPrice = item.unit_price ?? item.original_total ?? 0
-      return sum + unitPrice * item.quantity
-    }, 0)
-
-    const policySnapshot = {
-      approval_threshold: organization.approval_threshold ?? null,
-      approval_currency_code: organization.approval_currency_code ?? currencyCode,
-      requires_merchant_quote: organization.requires_merchant_quote ?? false,
-      quote_validity_days: organization.quote_validity_days ?? 7,
-      approval_policy_version: organization.approval_policy_version ?? 1,
-    }
-
-    const cartSnapshot = {
-      id: cart.id,
-      region_id: cart.region_id,
-      sales_channel_id: cart.sales_channel_id,
-      currency_code: currencyCode,
-      items: cart.items,
-      total: cart.total,
-      subtotal: cart.subtotal,
-    }
-
-    const threshold = organization.approval_threshold
-
-    const policyRequiresGovernance =
-      !!threshold &&
-      isAtOrAbove(requestTotal.toString(), threshold.toString())
-
-    const requiresMerchantQuote = organization.requires_merchant_quote === true
-
-    const shouldGovern = policyRequiresGovernance || requiresMerchantQuote
-
-    if (!shouldGovern) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        "This cart does not require a purchase request."
-      )
-    }
-
-    const result: PreparePurchaseRequestOutput = {
-      cart,
-      organization,
-      member,
-      cart_context: cartContext,
-      request_total: requestTotal,
-      currency_code: currencyCode,
-      policy_snapshot: policySnapshot,
-      cart_snapshot: cartSnapshot,
-    }
-
-    return new StepResponse(result)
-  }
-)
-
-const createPurchaseRequestStep = createStep(
-  "create-b2b-purchase-request",
-  async (
-    input: PreparePurchaseRequestOutput,
-    { container }
-  ) => {
-    const purchaseService =
-      container.resolve<B2BPurchaseModuleService>(B2B_PURCHASE_MODULE)
-
-    const reference = `B2B-${Date.now()}`
-
-    const created = await purchaseService.createB2BPurchaseRequests({
-      reference,
-      organization_id: input.organization.id,
-      requester_member_id: input.member.id,
-      customer_id: input.cart.customer_id,
-      cart_id: input.cart.id,
-      draft_order_id: input.draft_order_id ?? null,
-      order_change_id: input.order_change_id ?? null,
-      status: B2BPurchaseRequestStatus.PENDING_INTERNAL_APPROVAL,
-      currency_code: input.currency_code,
-      requested_total: Number(input.request_total),
-      cart_snapshot: input.cart_snapshot,
-      policy_snapshot: input.policy_snapshot,
-      submitted_at: new Date(),
-      expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
-    })
-
-    return new StepResponse(created)
-  }
-)
-
-export const submitPurchaseRequestWorkflow = createWorkflow(
-  "submit-b2b-purchase-request",
-  (input: SubmitPurchaseRequestInput) => {
-    acquireLockStep({
-      key: input.cart_id,
-      timeout: 30,
-      ttl: 120,
-    })
-
-    const prepared = (preparePurchaseRequestStep as any)(input)
-
-    const { data: cartData } = useQueryGraphStep({
-      entity: "cart",
-      fields: ["id", "customer_id", "region_id", "sales_channel_id", "currency_code", "items.*"],
-      filters: { id: input.cart_id },
-      options: { throwIfKeyNotFound: true },
-    }).config({ name: "retrieve-cart-for-purchase-request" })
-
-    const createOrderInput = transform(
-      { cartData, prepared, input },
-      ({ cartData, prepared, input }) => {
-        const cart = cartData[0]
-        const items = (cart && cart.items) ? cart.items.map((item: any) => ({
-          variant_id: item.variant_id,
-          quantity: item.quantity,
-          title: item.title,
-          unit_price: item.unit_price,
-          metadata: item.metadata,
-        })) : []
-
-        const preparedData = (prepared as any).data
-
-        return {
-          email: "",
-          region_id: cart?.region_id ?? preparedData?.cart?.region_id,
-          items,
-          sales_channel_id: cart?.sales_channel_id ?? preparedData?.cart?.sales_channel_id,
+      const prepared = (preparePurchaseRequestStep as any)(
+        transform({ carts, input }, ({ carts, input }) => ({
+          cart: carts[0],
           customer_id: input.customer_id,
-          currency_code: preparedData.currency_code,
-        }
-      }
-    )
+          purchase_order_number:
+            input.purchase_order_number,
+        }))
+      )
 
-    const { data: draftOrder } = (createOrderWorkflow.runAsStep as any)({
-      input: createOrderInput,
-    })
+      const draftOrderInput = transform(
+        { prepared },
+        ({ prepared }) => ({
+          is_draft_order: true,
+          status: OrderStatus.DRAFT,
 
-    const { data: orderChange } = (beginOrderEditOrderWorkflow.runAsStep as any)({
-      input: {
-        order_id: draftOrder.id,
-        created_by: input.customer_id,
-        description: "B2B purchase request submission",
-      },
-    })
+          sales_channel_id:
+            prepared.cart.sales_channel_id ?? undefined,
 
-    const requestInput = transform({ prepared, draftOrder, orderChange }, ({ prepared, draftOrder, orderChange }) => {
-      const p = (prepared as any).data
-      return {
-        cart: p.cart,
-        organization: p.organization,
-        member: p.member,
-        cart_context: p.cart_context,
-        request_total: p.request_total,
-        currency_code: p.currency_code,
-        policy_snapshot: p.policy_snapshot,
-        cart_snapshot: p.cart_snapshot,
-        draft_order_id: draftOrder.id,
-        order_change_id: orderChange.id,
-      }
-    })
+          customer_id: prepared.customer_id,
+          email: prepared.cart.email ?? undefined,
 
-    const request = (createPurchaseRequestStep as any)(requestInput)
+          billing_address:
+            prepared.cart.billing_address,
 
-    releaseLockStep({ key: input.cart_id })
+          shipping_address:
+            prepared.cart.shipping_address,
 
-    return new WorkflowResponse({
-      purchase_request: request,
-      draft_order: draftOrder,
-    })
-  }
-)
+          items: prepared.cart.items,
+
+          region_id: prepared.cart.region_id ?? undefined,
+
+          promo_codes:
+            prepared.cart.promotions?.map(
+              (promotion: { code?: string }) =>
+                promotion.code
+            ),
+
+          currency_code: prepared.cart.currency_code,
+
+          shipping_methods:
+            prepared.cart.shipping_methods ?? [],
+        })
+      )
+
+      const draftOrder = (createOrderWorkflow.runAsStep as any)({
+        input: draftOrderInput,
+      })
+
+      const orderEditInput = transform(
+        { draftOrder },
+        ({ draftOrder }) => ({
+          order_id: draftOrder.id,
+          description: "B2B purchase request",
+          internal_note: "",
+          metadata: {},
+        })
+      )
+
+      const orderChange =
+        (beginOrderEditOrderWorkflow.runAsStep as any)({
+          input: orderEditInput,
+        })
+
+      const requestInput = transform(
+        {
+          prepared,
+          draftOrder,
+          orderChange,
+        },
+        ({
+          prepared,
+          draftOrder,
+          orderChange,
+        }) => ({
+          ...prepared,
+          draft_order_id: draftOrder.id,
+          order_change_id: orderChange.id,
+        })
+      )
+
+      const request = (createPurchaseRequestStep as any)(requestInput)
+
+      releaseLockStep({
+        key: input.cart_id,
+      })
+
+      return new WorkflowResponse({
+        purchase_request: request,
+      })
+    }
+  )
+
