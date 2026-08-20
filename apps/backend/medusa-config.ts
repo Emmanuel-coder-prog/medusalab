@@ -2,6 +2,12 @@ import { loadEnv, defineConfig } from '@medusajs/framework/utils'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
+const databasePoolMax = Number(process.env.DB_POOL_MAX ?? 5)
+const databasePoolMin = Number(process.env.DB_POOL_MIN ?? 0)
+const databaseAcquireTimeout = Number(
+  process.env.DB_POOL_ACQUIRE_TIMEOUT_MS ?? 60000
+)
+
 module.exports = defineConfig({
   admin: {
     disable: process.env.DISABLE_MEDUSA_ADMIN === "true",
@@ -14,6 +20,13 @@ module.exports = defineConfig({
         | "server"
         | "worker") ?? "shared",
     databaseUrl: process.env.DATABASE_URL,
+    databaseDriverOptions: {
+      pool: {
+        min: databasePoolMin,
+        max: databasePoolMax,
+        acquireTimeoutMillis: databaseAcquireTimeout,
+      },
+    },
     http: {
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
