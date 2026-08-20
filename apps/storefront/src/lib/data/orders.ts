@@ -60,6 +60,26 @@ export const listOrders = async (
     .catch((err) => medusaError(err))
 }
 
+export const retrievePaymentTermsObligation = async (orderId: string) => {
+  const headers = {
+    ...(await getAuthHeaders()),
+  }
+
+  const next = {
+    ...(await getCacheOptions("orders")),
+  }
+
+  return sdk.client
+    .fetch<{ payment_terms_obligation: any }>(`/store/orders/${orderId}/payment-terms`, {
+      method: "GET",
+      headers,
+      next,
+      cache: "force-cache",
+    })
+    .then(({ payment_terms_obligation }) => payment_terms_obligation)
+    .catch(() => null)
+}
+
 export const createTransferRequest = async (
   state: {
     success: boolean

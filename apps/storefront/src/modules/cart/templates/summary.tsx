@@ -7,6 +7,8 @@ import Divider from "@modules/common/components/divider"
 import DiscountCode from "@modules/checkout/components/discount-code"
 import DeliverySlotReservation from "@modules/checkout/components/delivery-slot-reservation"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import { useB2BCartContext } from "@lib/hooks/use-b2b-cart-context"
+import B2BPurchaseRequestCard from "@modules/cart/components/b2b-purchase-request"
 import { HttpTypes } from "@medusajs/types"
 
 type SummaryProps = {
@@ -26,6 +28,7 @@ function getCheckoutStep(cart: HttpTypes.StoreCart) {
 
 const Summary = ({ cart, customer }: SummaryProps) => {
   const step = getCheckoutStep(cart)
+  const { selectedOrganization } = useB2BCartContext()
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -37,12 +40,17 @@ const Summary = ({ cart, customer }: SummaryProps) => {
       <DeliverySlotReservation cart={cart} customer={customer} variant="summary" />
       <Divider />
       <CartTotals totals={cart} />
-      <LocalizedClientLink
-        href={"/checkout?step=" + step}
-        data-testid="checkout-button"
-      >
-        <Button className="w-full h-10">Go to checkout</Button>
-      </LocalizedClientLink>
+
+      {selectedOrganization ? (
+        <B2BPurchaseRequestCard cart={cart} organization={selectedOrganization} />
+      ) : (
+        <LocalizedClientLink
+          href={"/checkout?step=" + step}
+          data-testid="checkout-button"
+        >
+          <Button className="w-full h-10">Go to checkout</Button>
+        </LocalizedClientLink>
+      )}
     </div>
   )
 }

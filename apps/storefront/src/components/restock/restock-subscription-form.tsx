@@ -45,14 +45,14 @@ export default function RestockSubscriptionForm({
   const [emailError, setEmailError] = useState<string | null>(null)
   const [hasAutoSubmitted, setHasAutoSubmitted] = useState(false)
 
-  const { mutate, isLoading, isSuccess, isError, error } =
+  const { mutate, isPending, isSuccess, isError, error } =
     useSubscribeToRestock()
 
   const duplicateError = getDuplicateSubscriptionMessage(
     isError ? error?.message : undefined
   )
   const backendError = isError && !duplicateError ? error?.message : null
-  const submissionDisabled = isLoading || isSuccess
+  const submissionDisabled = isPending || isSuccess
 
   useEffect(() => {
     if (!isAuthenticated || hasAutoSubmitted || submissionDisabled) {
@@ -134,7 +134,7 @@ export default function RestockSubscriptionForm({
                 disabled={submissionDisabled}
                 data-testid="restock-submit-button"
               >
-                {isLoading ? "Subscribing..." : "Notify me"}
+                {isPending ? "Subscribing..." : "Notify me"}
               </Button>
             </div>
           </form>
@@ -164,7 +164,7 @@ export default function RestockSubscriptionForm({
             />
           )}
 
-          {isLoading && (
+          {isPending && (
             <p
               className="text-sm text-ui-fg-subtle dark:text-slate-400"
               data-testid="restock-loading"
@@ -174,7 +174,7 @@ export default function RestockSubscriptionForm({
           )}
         </div>
 
-        {isAuthenticated && !isSuccess && !isLoading && isError && (
+        {isAuthenticated && !isSuccess && !isPending && isError && (
           <div className="mt-4 flex justify-end">
             <Button
               variant="secondary"

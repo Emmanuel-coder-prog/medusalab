@@ -9,3 +9,37 @@ export type {
   StoreDeliverySlot,
   StoreDeliverySlotReservation,
 } from "./delivery-slot"
+
+export type {
+  B2BOrganization,
+  B2BOrganizationMember,
+  B2BOrganizationWithRole,
+  B2BCartContext,
+  B2BPurchaseRequest,
+  B2BPurchaseApproval,
+  B2BOrderFinanceReview,
+  B2BOrderRelease,
+  B2BFinanceAccount,
+  B2BFinanceOperator,
+  B2BPaymentTermsObligation,
+  ListOrganizationsResponse,
+  SelectOrganizationPayload,
+  SubmitPurchaseRequestPayload,
+  SubmitPurchaseRequestResponse,
+  DecidePurchaseRequestPayload,
+  DecidePurchaseRequestResponse,
+  FinanceDecisionPayload,
+  FinanceDecisionResponse,
+} from "./b2b"
+
+export {
+  B2BOrganizationStatus,
+  B2BOrganizationMemberStatus,
+  B2BOrganizationRole,
+  B2BPurchaseRequestStatus,
+  B2BPurchaseApprovalDecision,
+  B2BFinanceReviewStatus,
+  B2BOrderReleaseStatus,
+  B2BFinanceAccountStatus,
+  B2BFinanceOperatorRole,
+} from "./b2b"

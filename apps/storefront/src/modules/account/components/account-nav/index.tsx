@@ -20,14 +20,35 @@ const AccountNav = ({
   const route = usePathname()
   const { countryCode } = useParams() as { countryCode: string }
 
+  const isInB2B = route.includes("/account/b2b")
+  const isBuyer = true // TODO: Check customer role
+
   const handleLogout = async () => {
     await signout(countryCode)
   }
 
+  const b2bNavLinks = [
+    {
+      name: "Organizations",
+      href: "/account/b2b/organizations",
+      testId: "b2b-organizations-link",
+    },
+    {
+      name: "Approvals",
+      href: "/account/b2b/approvals",
+      testId: "b2b-approvals-link",
+    },
+    {
+      name: "Quotes & Orders",
+      href: "/account/b2b/quotes",
+      testId: "b2b-quotes-link",
+    },
+  ]
+
   return (
     <div>
       <div className="small:hidden" data-testid="mobile-account-nav">
-        {route !== `/${countryCode}/account` ? (
+        {route !== `/${countryCode}/account` && !isInB2B ? (
           <LocalizedClientLink
             href="/account"
             className="flex items-center gap-x-2 text-small-regular py-2"
@@ -38,6 +59,38 @@ const AccountNav = ({
               <span>Account</span>
             </>
           </LocalizedClientLink>
+        ) : isInB2B ? (
+          <>
+            <LocalizedClientLink
+              href="/account"
+              className="flex items-center gap-x-2 text-small-regular py-2 mb-4"
+              data-testid="account-main-link"
+            >
+              <>
+                <ChevronDown className="transform rotate-90" />
+                <span>Account</span>
+              </>
+            </LocalizedClientLink>
+            <div className="text-xl-semi mb-4 px-8">B2B</div>
+            <div className="text-base-regular">
+              <ul>
+                {b2bNavLinks.map((link) => (
+                  <li key={link.href}>
+                    <LocalizedClientLink
+                      href={link.href}
+                      className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
+                      data-testid={link.testId}
+                    >
+                      <>
+                        <span>{link.name}</span>
+                        <ChevronDown className="transform -rotate-90" />
+                      </>
+                    </LocalizedClientLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </>
         ) : (
           <>
             <div className="text-xl-semi mb-4 px-8">
@@ -89,6 +142,19 @@ const AccountNav = ({
                   </LocalizedClientLink>
                 </li>
                 <li>
+                  <LocalizedClientLink
+                    href="/account/b2b/organizations"
+                    className="flex items-center justify-between py-4 border-b border-gray-200 px-8"
+                    data-testid="organizations-link"
+                  >
+                    <div className="flex items-center gap-x-2">
+                      <span className="text-base-semi">◆</span>
+                      <span>Organizations</span>
+                    </div>
+                    <ChevronDown className="transform -rotate-90" />
+                  </LocalizedClientLink>
+                </li>
+                <li>
                   <button
                     type="button"
                     className="flex items-center justify-between py-4 border-b border-gray-200 px-8 w-full"
@@ -108,60 +174,136 @@ const AccountNav = ({
         )}
       </div>
       <div className="hidden small:block" data-testid="account-nav">
-        <div>
-          <div className="pb-4">
-            <h3 className="text-base-semi">Account</h3>
+        {isInB2B ? (
+          <>
+            <div className="pb-4">
+              <h3 className="text-base-semi">Account</h3>
+            </div>
+            <div className="text-base-regular mb-6">
+              <ul className="flex mb-0 justify-start items-start flex-col gap-y-2">
+                <li>
+                  <AccountNavLink
+                    href="/account"
+                    route={route!}
+                    data-testid="overview-link"
+                  >
+                    Overview
+                  </AccountNavLink>
+                </li>
+                <li>
+                  <AccountNavLink
+                    href="/account/profile"
+                    route={route!}
+                    data-testid="profile-link"
+                  >
+                    Profile
+                  </AccountNavLink>
+                </li>
+                <li>
+                  <AccountNavLink
+                    href="/account/orders"
+                    route={route!}
+                    data-testid="orders-link"
+                  >
+                    Orders
+                  </AccountNavLink>
+                </li>
+              </ul>
+            </div>
+            <div className="pb-4">
+              <h3 className="text-base-semi">B2B</h3>
+            </div>
+            <div className="text-base-regular">
+              <ul className="flex mb-0 justify-start items-start flex-col gap-y-2">
+                {b2bNavLinks.map((link) => (
+                  <li key={link.href}>
+                    <AccountNavLink
+                      href={link.href}
+                      route={route!}
+                      data-testid={link.testId}
+                    >
+                      {link.name}
+                    </AccountNavLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="pt-6 border-t border-gray-200 mt-6">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-ui-fg-subtle hover:text-ui-fg-base"
+                data-testid="logout-button"
+              >
+                Log out
+              </button>
+            </div>
+          </>
+        ) : (
+          <div>
+            <div className="pb-4">
+              <h3 className="text-base-semi">Account</h3>
+            </div>
+            <div className="text-base-regular">
+              <ul className="flex mb-0 justify-start items-start flex-col gap-y-4">
+                <li>
+                  <AccountNavLink
+                    href="/account"
+                    route={route!}
+                    data-testid="overview-link"
+                  >
+                    Overview
+                  </AccountNavLink>
+                </li>
+                <li>
+                  <AccountNavLink
+                    href="/account/profile"
+                    route={route!}
+                    data-testid="profile-link"
+                  >
+                    Profile
+                  </AccountNavLink>
+                </li>
+                <li>
+                  <AccountNavLink
+                    href="/account/addresses"
+                    route={route!}
+                    data-testid="addresses-link"
+                  >
+                    Addresses
+                  </AccountNavLink>
+                </li>
+                <li>
+                  <AccountNavLink
+                    href="/account/orders"
+                    route={route!}
+                    data-testid="orders-link"
+                  >
+                    Orders
+                  </AccountNavLink>
+                </li>
+                <li>
+                  <AccountNavLink
+                    href="/account/b2b/organizations"
+                    route={route!}
+                    data-testid="organizations-link"
+                  >
+                    Organizations
+                  </AccountNavLink>
+                </li>
+                <li className="text-grey-700">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    data-testid="logout-button"
+                  >
+                    Log out
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="text-base-regular">
-            <ul className="flex mb-0 justify-start items-start flex-col gap-y-4">
-              <li>
-                <AccountNavLink
-                  href="/account"
-                  route={route!}
-                  data-testid="overview-link"
-                >
-                  Overview
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/profile"
-                  route={route!}
-                  data-testid="profile-link"
-                >
-                  Profile
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/addresses"
-                  route={route!}
-                  data-testid="addresses-link"
-                >
-                  Addresses
-                </AccountNavLink>
-              </li>
-              <li>
-                <AccountNavLink
-                  href="/account/orders"
-                  route={route!}
-                  data-testid="orders-link"
-                >
-                  Orders
-                </AccountNavLink>
-              </li>
-              <li className="text-grey-700">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  data-testid="logout-button"
-                >
-                  Log out
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )
