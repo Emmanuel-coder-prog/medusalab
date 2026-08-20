@@ -5,7 +5,6 @@ import {
 import {
   createStep,
   createWorkflow,
-  emitEventStep,
   StepResponse,
   transform,
   WorkflowResponse,
@@ -239,21 +238,6 @@ export const decideB2BOrderFinanceReviewWorkflow =
       })
 
       const result = decideFinanceReviewStep(input)
-
-      emitEventStep({
-        eventName: transform(
-          { result },
-          ({ result }) => result.event_name
-        ),
-        data: transform(
-          { result },
-          ({ result }) => ({
-            order_id: result.review.order_id,
-            finance_review_id: result.review.id,
-            order_release_id: result.release.id,
-          })
-        ),
-      })
 
       releaseLockStep({
         key: financeReviewLockKey,

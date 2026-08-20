@@ -130,3 +130,45 @@ export const removeCartId = async () => {
     maxAge: -1,
   })
 }
+
+export const getB2BCartContext = async (): Promise<{
+  cartId: string
+  organizationId: string
+} | null> => {
+  const cookies = await nextCookies()
+  const value = cookies.get("_medusa_b2b_cart_context")?.value
+
+  if (!value) {
+    return null
+  }
+
+  try {
+    return JSON.parse(value) as { cartId: string; organizationId: string }
+  } catch {
+    return null
+  }
+}
+
+export const setB2BCartContext = async (
+  cartId: string,
+  organizationId: string
+) => {
+  const cookies = await nextCookies()
+  cookies.set(
+    "_medusa_b2b_cart_context",
+    JSON.stringify({ cartId, organizationId }),
+    {
+      maxAge: 60 * 60 * 24 * 7,
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    }
+  )
+}
+
+export const removeB2BCartContext = async () => {
+  const cookies = await nextCookies()
+  cookies.set("_medusa_b2b_cart_context", "", {
+    maxAge: -1,
+  })
+}

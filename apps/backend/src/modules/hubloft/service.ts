@@ -1,4 +1,5 @@
 import { MedusaService } from "@medusajs/framework/utils"
+import type { FindConfig } from "@medusajs/framework/types"
 
 import { FulfillmentOutbox } from "./models/fulfillment-outbox"
 import {
@@ -19,7 +20,7 @@ class HubLoftModuleService extends MedusaService({
       status: HubLoftFulfillmentOutboxStatus.PENDING,
     })
 
-    if (existing.length > 0) {
+    if (existing && existing.length > 0) {
       return existing[0]
     }
 

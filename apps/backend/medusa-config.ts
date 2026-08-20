@@ -103,5 +103,13 @@ module.exports = defineConfig({
   resolve: "./src/modules/b2b-finance",
     },
 
+    {
+      resolve: "./src/modules/b2b-audit",
+    },
+
+    {
+      resolve: "./src/modules/finance-connector",
+    },
+
   ],
 })

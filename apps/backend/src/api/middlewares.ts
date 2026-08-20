@@ -4,6 +4,7 @@ import {
   validateAndTransformBody,
 } from "@medusajs/framework/http"
 import { z } from "@medusajs/framework/zod"
+import { PostB2BOrganization } from "./store/customers/me/b2b/organizations/validators"
 import {
   AdminCreateDeliverySlotSchema,
   AdminUpdateDeliverySlotSchema,
@@ -17,6 +18,10 @@ import { PostSelectB2BOrganization } from "./store/customers/me/b2b/carts/[id]/o
 import { PostB2BPurchaseRequest } from "./store/customers/me/b2b/purchase-requests/validators"
 import { PostPurchaseRequestDecision } from "./store/customers/me/b2b/purchase-requests/[id]/decision/validators"
 import { PostFinanceDecision } from "./admin/b2b/finance-reviews/[id]/decision/validators"
+import {
+  PostSendOfferSchema,
+  PostRejectQuoteSchema,
+} from "./admin/b2b/purchase-requests/validators"
 
 export default defineMiddlewares({
   routes: [
@@ -73,6 +78,34 @@ export default defineMiddlewares({
       ],
     },
     {
+      matcher: "/store/customers/me/b2b/organizations",
+      methods: ["GET"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
+      ],
+    },
+    {
+      matcher: "/store/customers/me/b2b/organizations",
+      methods: ["POST"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
+        validateAndTransformBody(PostB2BOrganization),
+      ],
+    },
+    {
+      matcher: "/store/customers/me/b2b/purchase-requests",
+      methods: ["GET"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
+      ],
+    },
+    {
       matcher: "/store/customers/me/b2b/purchase-requests",
       methods: ["POST"],
       middlewares: [
@@ -80,6 +113,15 @@ export default defineMiddlewares({
           allowUnauthenticated: true,
         }),
         validateAndTransformBody(PostB2BPurchaseRequest),
+      ],
+    },
+    {
+      matcher: "/store/customers/me/b2b/purchase-requests/:id",
+      methods: ["GET"],
+      middlewares: [
+        authenticate("customer", ["bearer", "session"], {
+          allowUnauthenticated: true,
+        }),
       ],
     },
     {
@@ -96,6 +138,28 @@ export default defineMiddlewares({
       matcher: "/admin/b2b/finance-reviews/:id/decision",
       methods: ["POST"],
       middlewares: [validateAndTransformBody(PostFinanceDecision)],
+    },
+    {
+      matcher: "/admin/b2b/purchase-requests",
+      methods: ["GET"],
+    },
+    {
+      matcher: "/admin/b2b/purchase-requests/:id",
+      methods: ["GET"],
+    },
+    {
+      matcher: "/admin/b2b/purchase-requests/:id/offer",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(PostSendOfferSchema)],
+    },
+    {
+      matcher: "/admin/b2b/purchase-requests/:id/reject",
+      methods: ["POST"],
+      middlewares: [validateAndTransformBody(PostRejectQuoteSchema)],
+    },
+    {
+      matcher: "/admin/b2b/exceptions",
+      methods: ["GET"],
     },
   ],
 })

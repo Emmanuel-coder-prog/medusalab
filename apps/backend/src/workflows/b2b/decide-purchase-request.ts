@@ -7,12 +7,14 @@ import {
   createWorkflow,
   StepResponse,
   WorkflowResponse,
+  when,
 } from "@medusajs/framework/workflows-sdk"
 import { transform } from "@medusajs/framework/workflows-sdk"
 
 import {
   acquireLockStep,
   releaseLockStep,
+  completeOrderWorkflow,
 } from "@medusajs/medusa/core-flows"
 
 import {
@@ -64,13 +66,48 @@ const decidePurchaseRequestStep = createStep(
         input.purchase_request_id
       )
 
+    // Handle buyer acceptance for PENDING_BUYER_ACCEPTANCE status
+    if (
+      request.status ===
+      B2BPurchaseRequestStatus.PENDING_BUYER_ACCEPTANCE
+    ) {
+      if (input.decision !== "approved") {
+        throw new MedusaError(
+          MedusaError.Types.INVALID_DATA,
+          "Only approval is allowed for quote acceptance."
+        )
+      }
+
+      const now = new Date()
+
+      // Verify order not already created (idempotency)
+      if (request.order_id) {
+        const updated =
+          await purchaseService.retrieveB2BPurchaseRequest(
+            input.purchase_request_id
+          )
+        return new StepResponse(updated)
+      }
+
+      // Mark as converted and set accepted_at timestamp
+      const updated =
+        await purchaseService.updateB2BPurchaseRequests({
+          id: request.id,
+          status: B2BPurchaseRequestStatus.CONVERTED,
+          accepted_at: now,
+        })
+
+      return new StepResponse(updated)
+    }
+
+    // Handle internal approval for PENDING_INTERNAL_APPROVAL status
     if (
       request.status !==
       B2BPurchaseRequestStatus.PENDING_INTERNAL_APPROVAL
     ) {
       throw new MedusaError(
         MedusaError.Types.INVALID_DATA,
-        "This purchase request is not awaiting approval."
+        "This purchase request cannot be decided at this time."
       )
     }
 
